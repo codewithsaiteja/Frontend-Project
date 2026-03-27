@@ -1,0 +1,37 @@
+# Dependencies
+/node_modules
+/jspm_packages
+
+# Data & Logs
+/data
+*.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.test
+
+# IDE/System
+.DS_Store
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Build/Dist
+/dist
+/build
+
+# Docker local data (handled via volumes, but good to ignore local artifacts)
+mysql_data/
+
+# Temporary test scripts
+test-db.js
+test-limit.js
+scripts/migrate-to-mysql.js
