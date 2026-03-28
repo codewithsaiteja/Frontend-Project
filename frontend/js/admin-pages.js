@@ -96,7 +96,7 @@ Pages.register('businesses', async () => {
   </div>
   <div class="modal-overlay" id="biz-modal">
     <div class="modal modal-sm">
-      <div class="modal-header"><div class="modal-title">Add Business</div><button class="btn btn-sm btn-secondary" onclick="closeModal('biz-modal')">✕</button></div>
+      <div class="modal-header"><div class="modal-title" id="biz-modal-title">Add Business</div><button class="btn btn-sm btn-secondary" onclick="closeModal('biz-modal')">✕</button></div>
       <div class="modal-body">
         <div class="form-grid">
           <div class="form-group full">
@@ -300,7 +300,7 @@ async function saveBusiness() {
 
 async function switchBusiness(id) {
   try {
-    App.currentBiz = App.businesses.find(b => b.id === id) || (await API.get(`/businesses/${id}`)).data;
+    App.currentBiz = App.businesses.find(b => String(b.id || b._id) === String(id)) || (await API.get(`/businesses/${id}`)).data;
     localStorage.setItem('gst_biz_id', id);
     App.renderSidebar();
     toast(`Switched to ${App.currentBiz.trade_name || App.currentBiz.legal_name}`, 'success');

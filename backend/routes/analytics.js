@@ -1,28 +1,56 @@
 const router = require('express').Router();
-const { dbGet, dbAll } = require('../utils/db');
+const { Invoice, Purchase, Compliance } = require('../utils/db');
 const { auth } = require('../middleware/auth');
+const mongoose = require('mongoose');
+
+function toObjId(id) { return new mongoose.Types.ObjectId(id); }
 
 router.get('/dashboard', auth, async (req, res) => {
   try {
     const { business_id } = req.query;
     if (!business_id) return res.status(400).json({ success: false, message: 'business_id required' });
+    const bid = toObjId(business_id);
     const now = new Date();
     const fyStart = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear()-1;
     const fy = `${fyStart}-${fyStart+1}`;
     const fromDate = `${fyStart}-04-01`, toDate = `${fyStart+1}-03-31`;
 
-    const summary = await dbGet(`SELECT COUNT(*) total_invoices, COALESCE(SUM(total_amount),0) total_sales, COALESCE(SUM(taxable_value),0) total_taxable, COALESCE(SUM(cgst+sgst+igst),0) total_tax, COALESCE(SUM(cess),0) total_cess FROM invoices WHERE business_id=? AND invoice_date BETWEEN ? AND ? AND status != 'cancelled'`, [business_id, fromDate, toDate]);
-    const itcSummary = await dbGet(`SELECT COALESCE(SUM(cgst+sgst+igst),0) itc_eligible FROM purchase_invoices WHERE business_id=? AND invoice_date BETWEEN ? AND ? AND itc_eligible=1`, [business_id, fromDate, toDate]);
-    const monthly = await dbAll(`SELECT DATE_FORMAT(invoice_date, '%m') m, DATE_FORMAT(invoice_date, '%Y') y, COALESCE(SUM(taxable_value),0) taxable, COALESCE(SUM(cgst+sgst+igst),0) tax, COUNT(*) count FROM invoices WHERE business_id=? AND invoice_date BETWEEN ? AND ? AND status != 'cancelled' GROUP BY y, m ORDER BY y, m`, [business_id, fromDate, toDate]);
-    const topCustomers = await dbAll(`SELECT party_name, COALESCE(SUM(total_amount),0) total, COUNT(*) invoices FROM invoices WHERE business_id=? AND invoice_date BETWEEN ? AND ? AND status != 'cancelled' GROUP BY party_name ORDER BY total DESC LIMIT 10`, [business_id, fromDate, toDate]);
-    const bySupplyType = await dbAll(`SELECT supply_type, COALESCE(SUM(taxable_value),0) taxable, COALESCE(SUM(cgst),0) cgst, COALESCE(SUM(sgst),0) sgst, COALESCE(SUM(igst),0) igst FROM invoices WHERE business_id=? AND invoice_date BETWEEN ? AND ? AND status != 'cancelled' GROUP BY supply_type`, [business_id, fromDate, toDate]);
-    const pendingComp = await dbGet(`SELECT COUNT(*) c FROM compliance_calendar WHERE business_id=? AND status='pending' AND due_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)`, [business_id]);
-    const overdueComp = await dbGet(`SELECT COUNT(*) c FROM compliance_calendar WHERE business_id=? AND status='overdue'`, [business_id]);
+    const [summaryAgg] = await Invoice.aggregate([
+      { $match: { business_id: bid, invoice_date: { $gte: fromDate, $lte: toDate }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: null, total_invoices: { $sum: 1 }, total_sales: { $sum: '$total_amount' }, total_taxable: { $sum: '$taxable_value' }, total_tax: { $sum: { $add: ['$cgst','$sgst','$igst'] } }, total_cess: { $sum: '$cess' } } }
+    ]);
+    const [itcAgg] = await Purchase.aggregate([
+      { $match: { business_id: bid, invoice_date: { $gte: fromDate, $lte: toDate }, itc_eligible: 1 } },
+      { $group: { _id: null, itc_eligible: { $sum: { $add: ['$cgst','$sgst','$igst'] } } } }
+    ]);
+    const monthly = await Invoice.aggregate([
+      { $match: { business_id: bid, invoice_date: { $gte: fromDate, $lte: toDate }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: { m: { $substr: ['$invoice_date',5,2] }, y: { $substr: ['$invoice_date',0,4] } }, taxable: { $sum: '$taxable_value' }, tax: { $sum: { $add: ['$cgst','$sgst','$igst'] } }, count: { $sum: 1 } } },
+      { $sort: { '_id.y': 1, '_id.m': 1 } },
+      { $project: { _id: 0, m: '$_id.m', y: '$_id.y', taxable: 1, tax: 1, count: 1 } }
+    ]);
+    const topCustomers = await Invoice.aggregate([
+      { $match: { business_id: bid, invoice_date: { $gte: fromDate, $lte: toDate }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: '$party_name', total: { $sum: '$total_amount' }, invoices: { $sum: 1 } } },
+      { $sort: { total: -1 } }, { $limit: 10 },
+      { $project: { _id: 0, party_name: '$_id', total: 1, invoices: 1 } }
+    ]);
+    const bySupplyType = await Invoice.aggregate([
+      { $match: { business_id: bid, invoice_date: { $gte: fromDate, $lte: toDate }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: '$supply_type', taxable: { $sum: '$taxable_value' }, cgst: { $sum: '$cgst' }, sgst: { $sum: '$sgst' }, igst: { $sum: '$igst' } } },
+      { $project: { _id: 0, supply_type: '$_id', taxable: 1, cgst: 1, sgst: 1, igst: 1 } }
+    ]);
+    const today = new Date().toISOString().split('T')[0];
+    const sevenDays = new Date(Date.now()+7*24*60*60*1000).toISOString().split('T')[0];
+    const pendingComp = await Compliance.countDocuments({ business_id: bid, status: 'pending', due_date: { $lte: sevenDays } });
+    const overdueComp = await Compliance.countDocuments({ business_id: bid, status: 'overdue' });
 
+    const summary = summaryAgg || { total_invoices:0, total_sales:0, total_taxable:0, total_tax:0, total_cess:0 };
+    const itc = itcAgg?.itc_eligible || 0;
     res.json({ success: true, data: {
-      summary: { ...summary, itc_eligible: itcSummary?.itc_eligible||0, net_liability: Math.max(0,(summary?.total_tax||0)-(itcSummary?.itc_eligible||0)), financial_year: fy },
+      summary: { ...summary, itc_eligible: itc, net_liability: Math.max(0,(summary.total_tax||0)-itc), financial_year: fy },
       monthly, top_customers: topCustomers, by_supply_type: bySupplyType,
-      compliance: { pending_upcoming: pendingComp?.c||0, overdue: overdueComp?.c||0 }
+      compliance: { pending_upcoming: pendingComp, overdue: overdueComp }
     }});
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
@@ -31,7 +59,15 @@ router.get('/tax-trend', auth, async (req, res) => {
   try {
     const { business_id, months = 12 } = req.query;
     if (!business_id) return res.status(400).json({ success: false, message: 'business_id required' });
-    const rows = await dbAll(`SELECT DATE_FORMAT(invoice_date, '%m/%Y') period, COALESCE(SUM(cgst),0) cgst, COALESCE(SUM(sgst),0) sgst, COALESCE(SUM(igst),0) igst, COALESCE(SUM(taxable_value),0) taxable FROM invoices WHERE business_id=? AND status != 'cancelled' AND invoice_date >= DATE_SUB(CURDATE(), INTERVAL ${parseInt(months)} MONTH) GROUP BY period ORDER BY invoice_date`, [business_id]);
+    const bid = toObjId(business_id);
+    const since = new Date(); since.setMonth(since.getMonth() - parseInt(months));
+    const sinceStr = since.toISOString().split('T')[0];
+    const rows = await Invoice.aggregate([
+      { $match: { business_id: bid, status: { $ne: 'cancelled' }, invoice_date: { $gte: sinceStr } } },
+      { $group: { _id: { m: { $substr: ['$invoice_date',5,2] }, y: { $substr: ['$invoice_date',0,4] } }, cgst: { $sum: '$cgst' }, sgst: { $sum: '$sgst' }, igst: { $sum: '$igst' }, taxable: { $sum: '$taxable_value' } } },
+      { $sort: { '_id.y': 1, '_id.m': 1 } },
+      { $project: { _id: 0, period: { $concat: ['$_id.m','/',' $_id.y'] }, cgst: 1, sgst: 1, igst: 1, taxable: 1 } }
+    ]);
     res.json({ success: true, data: rows });
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
@@ -40,8 +76,12 @@ router.get('/itc-summary', auth, async (req, res) => {
   try {
     const { business_id } = req.query;
     if (!business_id) return res.status(400).json({ success: false, message: 'business_id required' });
-    const r = await dbGet(`SELECT COALESCE(SUM(cgst),0) cgst, COALESCE(SUM(sgst),0) sgst, COALESCE(SUM(igst),0) igst, COALESCE(SUM(cess),0) cess, COUNT(*) bills FROM purchase_invoices WHERE business_id=? AND itc_eligible=1`, [business_id]);
-    res.json({ success: true, data: r });
+    const [r] = await Purchase.aggregate([
+      { $match: { business_id: toObjId(business_id), itc_eligible: 1 } },
+      { $group: { _id: null, cgst: { $sum: '$cgst' }, sgst: { $sum: '$sgst' }, igst: { $sum: '$igst' }, cess: { $sum: '$cess' }, bills: { $sum: 1 } } },
+      { $project: { _id: 0 } }
+    ]);
+    res.json({ success: true, data: r || { cgst:0, sgst:0, igst:0, cess:0, bills:0 } });
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
 

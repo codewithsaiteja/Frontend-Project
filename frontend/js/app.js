@@ -169,8 +169,8 @@ const App = {
       this.user = res.user;
       this.businesses = res.businesses || [];
       const savedBiz = localStorage.getItem('gst_biz_id');
-      this.currentBiz = this.businesses.find(b => b.id == savedBiz) || this.businesses[0];
-      if (this.currentBiz) localStorage.setItem('gst_biz_id', this.currentBiz.id);
+      this.currentBiz = this.businesses.find(b => String(b.id || b._id) === String(savedBiz)) || this.businesses[0];
+      if (this.currentBiz) localStorage.setItem('gst_biz_id', this.currentBiz.id || this.currentBiz._id);
       this.showApp();
       Pages.navigate(location.hash.replace('#', '') || 'dashboard');
     } catch (e) {
@@ -197,12 +197,19 @@ const App = {
   },
 
   renderSidebar() {
-    if (!this.currentBiz) return;
-    document.getElementById('biz-name').textContent = this.currentBiz.trade_name || this.currentBiz.legal_name;
-    document.getElementById('biz-gstin').textContent = this.currentBiz.gstin;
-    document.getElementById('user-name').textContent = this.user.name;
-    document.getElementById('user-role').textContent = this.user.role;
-    document.getElementById('user-avatar').textContent = this.user.name.charAt(0).toUpperCase();
+    // Always render user info
+    if (this.user) {
+      document.getElementById('user-name').textContent = this.user.name;
+      document.getElementById('user-role').textContent = this.user.role;
+      document.getElementById('user-avatar').textContent = this.user.name.charAt(0).toUpperCase();
+    }
+    if (this.currentBiz) {
+      document.getElementById('biz-name').textContent = this.currentBiz.trade_name || this.currentBiz.legal_name;
+      document.getElementById('biz-gstin').textContent = this.currentBiz.gstin;
+    } else {
+      document.getElementById('biz-name').textContent = 'No business selected';
+      document.getElementById('biz-gstin').textContent = '—';
+    }
   },
 
   // ─── Theme Toggle ──────────────────────────────────────────

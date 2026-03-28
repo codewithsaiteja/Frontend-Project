@@ -1,44 +1,53 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { dbGet, dbAll, dbRun } = require('../utils/db');
+const { User, Business, UserBusiness } = require('../utils/db');
 const { auth } = require('../middleware/auth');
-const { body } = require('express-validator');
-const { validateReq } = require('../middleware/validate');
+const { body, validationResult } = require('express-validator');
+
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
+  next();
+};
 
 router.post('/login', [
-  body('email').trim().isEmail().withMessage('Valid email required'),
-  body('password').notEmpty().withMessage('Password required'),
-  validateReq
+  body('email').trim().isEmail(),
+  body('password').notEmpty(),
+  validate
 ], async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await dbGet('SELECT * FROM users WHERE email=? AND active=1', [email.toLowerCase()]);
+    const user = await User.findOne({ email: email.toLowerCase(), active: 1 });
     if (!user || !bcrypt.compareSync(password, user.password))
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET || 'gst_secret', { expiresIn: '7d' });
-    const businesses = await dbAll(`SELECT b.* FROM businesses b JOIN user_businesses ub ON b.id=ub.business_id WHERE ub.user_id=? AND b.active=1`, [user.id]);
-    res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role }, businesses });
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'gst_secret', { expiresIn: '7d' });
+    const ubLinks = await UserBusiness.find({ user_id: user._id });
+    const bizIds = ubLinks.map(u => u.business_id);
+    const businesses = await Business.find({ _id: { $in: bizIds }, active: 1 }).lean();
+    res.json({ success: true, token, user: { id: user._id, name: user.name, email: user.email, role: user.role }, businesses: businesses.map(b => ({ ...b, id: b._id })) });
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 router.get('/me', auth, async (req, res) => {
-  const businesses = await dbAll(`SELECT b.* FROM businesses b JOIN user_businesses ub ON b.id=ub.business_id WHERE ub.user_id=? AND b.active=1`, [req.user.id]);
-  res.json({ success: true, user: req.user, businesses });
+  const ubLinks = await UserBusiness.find({ user_id: req.user._id });
+  const bizIds = ubLinks.map(u => u.business_id);
+  const businesses = await Business.find({ _id: { $in: bizIds }, active: 1 }).lean();
+  res.json({ success: true, user: req.user, businesses: businesses.map(b => ({ ...b, id: b._id })) });
 });
 
 router.post('/change-password', auth, [
-  body('currentPassword').notEmpty().withMessage('Current password required'),
-  body('newPassword').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  validateReq
+  body('currentPassword').notEmpty(),
+  body('newPassword').isLength({ min: 6 }),
+  validate
 ], async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-    const user = await dbGet('SELECT * FROM users WHERE id=?', [req.user.id]);
+    const user = await User.findById(req.user._id);
     if (!bcrypt.compareSync(currentPassword, user.password))
       return res.status(400).json({ success: false, message: 'Current password incorrect' });
-    const hash = bcrypt.hashSync(newPassword, 10);
-    await dbRun('UPDATE users SET password=? WHERE id=?', [hash, req.user.id]);
+    user.password = bcrypt.hashSync(newPassword, 10);
+    await user.save();
     res.json({ success: true, message: 'Password changed successfully' });
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }
 });
