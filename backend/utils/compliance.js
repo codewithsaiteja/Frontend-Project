@@ -1,8 +1,9 @@
-const { dbRun } = require('./db');
+const { Compliance } = require('./db');
 
 async function updateOverdueCompliance() {
   try {
-    await dbRun(`UPDATE compliance_calendar SET status='overdue' WHERE due_date < CURDATE() AND status='pending'`);
+    const today = new Date().toISOString().split('T')[0];
+    await Compliance.updateMany({ due_date: { $lt: today }, status: 'pending' }, { status: 'overdue' });
   } catch(e) { console.error('Compliance update error:', e); }
 }
 
@@ -17,13 +18,22 @@ async function generateComplianceCalendar(businessId, financialYear) {
     const period = `${m}${y}`;
     const nextM = parseInt(m) === 12 ? '01' : String(parseInt(m)+1).padStart(2,'0');
     const nextY = parseInt(m) === 12 ? y+1 : y;
-    await dbRun(`INSERT OR IGNORE INTO compliance_calendar(business_id,return_type,period,due_date,status) VALUES(?,?,?,?,?)`,
-      [businessId, 'GSTR1', period, `${nextY}-${nextM}-11`, 'pending']);
-    await dbRun(`INSERT OR IGNORE INTO compliance_calendar(business_id,return_type,period,due_date,status) VALUES(?,?,?,?,?)`,
-      [businessId, 'GSTR3B', period, `${nextY}-${nextM}-20`, 'pending']);
+    await Compliance.findOneAndUpdate(
+      { business_id: businessId, return_type: 'GSTR1', period },
+      { $setOnInsert: { business_id: businessId, return_type: 'GSTR1', period, due_date: `${nextY}-${nextM}-11`, status: 'pending' } },
+      { upsert: true }
+    );
+    await Compliance.findOneAndUpdate(
+      { business_id: businessId, return_type: 'GSTR3B', period },
+      { $setOnInsert: { business_id: businessId, return_type: 'GSTR3B', period, due_date: `${nextY}-${nextM}-20`, status: 'pending' } },
+      { upsert: true }
+    );
   }
-  await dbRun(`INSERT OR IGNORE INTO compliance_calendar(business_id,return_type,period,due_date,status) VALUES(?,?,?,?,?)`,
-    [businessId, 'GSTR9', financialYear, `${fy+1}-12-31`, 'pending']);
+  await Compliance.findOneAndUpdate(
+    { business_id: businessId, return_type: 'GSTR9', period: financialYear },
+    { $setOnInsert: { business_id: businessId, return_type: 'GSTR9', period: financialYear, due_date: `${fy+1}-12-31`, status: 'pending' } },
+    { upsert: true }
+  );
 }
 
 module.exports = { updateOverdueCompliance, generateComplianceCalendar };

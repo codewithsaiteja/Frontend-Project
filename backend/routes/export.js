@@ -1,13 +1,15 @@
 const router = require('express').Router();
-const { dbGet, dbAll } = require('../utils/db');
+const { Invoice, InvoiceItem, Business, Purchase } = require('../utils/db');
 const { auth } = require('../middleware/auth');
+const mongoose = require('mongoose');
 
 router.get('/invoice/:id/pdf', auth, async (req, res) => {
   try {
     const PDFDocument = require('pdfkit');
-    const inv = await dbGet('SELECT i.*, b.legal_name as biz_name, b.gstin as biz_gstin, b.address as biz_address FROM invoices i JOIN businesses b ON i.business_id=b.id WHERE i.id=?', [req.params.id]);
+    const inv = await Invoice.findById(req.params.id).lean();
     if (!inv) return res.status(404).json({ success: false, message: 'Invoice not found' });
-    const items = await dbAll('SELECT * FROM invoice_items WHERE invoice_id=?', [req.params.id]);
+    const biz = await Business.findById(inv.business_id).lean();
+    const items = await InvoiceItem.find({ invoice_id: req.params.id }).lean();
 
     const doc = new PDFDocument({ margin: 40, size: 'A4' });
     res.setHeader('Content-Type', 'application/pdf');
@@ -16,9 +18,9 @@ router.get('/invoice/:id/pdf', auth, async (req, res) => {
 
     doc.fontSize(20).font('Helvetica-Bold').text('TAX INVOICE', { align: 'center' });
     doc.moveDown(0.5);
-    doc.fontSize(10).font('Helvetica-Bold').text(inv.biz_name, { align: 'center' });
-    doc.font('Helvetica').text(`GSTIN: ${inv.biz_gstin}`, { align: 'center' });
-    if (inv.biz_address) doc.text(inv.biz_address, { align: 'center' });
+    doc.fontSize(10).font('Helvetica-Bold').text(biz?.legal_name || '', { align: 'center' });
+    doc.font('Helvetica').text(`GSTIN: ${biz?.gstin || ''}`, { align: 'center' });
+    if (biz?.address) doc.text(biz.address, { align: 'center' });
     doc.moveDown();
 
     doc.rect(40, doc.y, 515, 60).stroke();
@@ -31,10 +33,7 @@ router.get('/invoice/:id/pdf', auth, async (req, res) => {
     doc.font('Helvetica').text((inv.supply_type||'').toUpperCase(), 120, detY+18);
     doc.font('Helvetica-Bold').text('Status:', 300, detY+18);
     doc.font('Helvetica').text(inv.status||'', 340, detY+18);
-    if (inv.irn) {
-      doc.font('Helvetica-Bold').text('IRN:', 50, detY+36);
-      doc.font('Helvetica').fontSize(7).text((inv.irn||'').substring(0,64), 75, detY+37);
-    }
+    if (inv.irn) { doc.font('Helvetica-Bold').text('IRN:', 50, detY+36); doc.font('Helvetica').fontSize(7).text((inv.irn||'').substring(0,64), 75, detY+37); }
     doc.moveDown(4);
 
     if (inv.party_name) {
@@ -80,8 +79,7 @@ router.get('/invoice/:id/pdf', auth, async (req, res) => {
     totLines.forEach(([label, val], i) => {
       const isBold = i === totLines.length-1;
       if (isBold) doc.rect(40, rowY, 515, 18).fill('#2d3748');
-      doc.font(isBold?'Helvetica-Bold':'Helvetica').fontSize(9)
-        .fillColor(isBold?'white':'black')
+      doc.font(isBold?'Helvetica-Bold':'Helvetica').fontSize(9).fillColor(isBold?'white':'black')
         .text(label, 350, rowY+4, {width:120, align:'right'})
         .text(`Rs. ${(val||0).toFixed(2)}`, 480, rowY+4, {width:68, align:'right'});
       doc.fillColor('black');
@@ -100,44 +98,31 @@ router.get('/invoices/excel', auth, async (req, res) => {
     const ExcelJS = require('exceljs');
     const { business_id, from_date, to_date } = req.query;
     if (!business_id) return res.status(400).json({ success: false, message: 'business_id required' });
-    let sql = `SELECT i.* FROM invoices i WHERE i.business_id=?`;
-    const params = [business_id];
-    if (from_date) { sql += ' AND i.invoice_date >= ?'; params.push(from_date); }
-    if (to_date) { sql += ' AND i.invoice_date <= ?'; params.push(to_date); }
-    sql += ' ORDER BY i.invoice_date DESC';
-    const rows = await dbAll(sql, params);
+    const filter = { business_id };
+    if (from_date || to_date) { filter.invoice_date = {}; if (from_date) filter.invoice_date.$gte = from_date; if (to_date) filter.invoice_date.$lte = to_date; }
+    const rows = await Invoice.find(filter).sort({ invoice_date: -1 }).lean();
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Sales Invoices');
     ws.columns = [
-      {header:'Invoice No', key:'invoice_number', width:18},
-      {header:'Date', key:'invoice_date', width:12},
-      {header:'Party Name', key:'party_name', width:25},
-      {header:'Party GSTIN', key:'party_gstin', width:18},
-      {header:'Type', key:'invoice_type', width:8},
-      {header:'Supply', key:'supply_type', width:10},
-      {header:'Taxable', key:'taxable_value', width:14},
-      {header:'CGST', key:'cgst', width:12},
-      {header:'SGST', key:'sgst', width:12},
-      {header:'IGST', key:'igst', width:12},
-      {header:'Total', key:'total_amount', width:14},
-      {header:'Status', key:'status', width:12},
+      {header:'Invoice No',key:'invoice_number',width:18},{header:'Date',key:'invoice_date',width:12},
+      {header:'Party Name',key:'party_name',width:25},{header:'Party GSTIN',key:'party_gstin',width:18},
+      {header:'Type',key:'invoice_type',width:8},{header:'Supply',key:'supply_type',width:10},
+      {header:'Taxable',key:'taxable_value',width:14},{header:'CGST',key:'cgst',width:12},
+      {header:'SGST',key:'sgst',width:12},{header:'IGST',key:'igst',width:12},
+      {header:'Total',key:'total_amount',width:14},{header:'Status',key:'status',width:12},
     ];
-    ws.getRow(1).eachCell(cell => {
-      cell.fill = {type:'pattern',pattern:'solid',fgColor:{argb:'FF2D3748'}};
-      cell.font = {bold:true,color:{argb:'FFFFFFFF'}};
-    });
+    ws.getRow(1).eachCell(cell => { cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2D3748'}}; cell.font={bold:true,color:{argb:'FFFFFFFF'}}; });
     rows.forEach((r,i) => {
       const row = ws.addRow(r);
       if (i%2===0) row.eachCell(c=>{c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF7FAFC'}};});
       ['taxable_value','cgst','sgst','igst','total_amount'].forEach(k=>{row.getCell(k).numFmt='#,##0.00';});
     });
     res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition',`attachment; filename="Invoices.xlsx"`);
+    res.setHeader('Content-Disposition','attachment; filename="Invoices.xlsx"');
     await wb.xlsx.write(res);
     res.end();
   } catch(e) {
-    console.error(e);
     if (!res.headersSent) res.status(500).json({ success: false, message: 'Excel export failed: '+e.message });
   }
 });
@@ -147,14 +132,25 @@ router.get('/dashboard-report', auth, async (req, res) => {
     const PDFDocument = require('pdfkit');
     const { business_id } = req.query;
     if (!business_id) return res.status(400).json({ success: false, message: 'business_id required' });
-    const biz = await dbGet('SELECT * FROM businesses WHERE id=?', [business_id]);
+    const biz = await Business.findById(business_id).lean();
     if (!biz) return res.status(404).json({ success: false, message: 'Business not found' });
-
+    const bid = new mongoose.Types.ObjectId(business_id);
     const now = new Date();
     const fyStart = now.getMonth() >= 3 ? `${now.getFullYear()}-04-01` : `${now.getFullYear()-1}-04-01`;
-    const summary = await dbGet(`SELECT COUNT(*) as total_invoices, COALESCE(SUM(taxable_value),0) as total_sales, COALESCE(SUM(cgst+sgst+igst),0) as total_tax FROM invoices WHERE business_id=? AND invoice_date>=? AND status!='cancelled'`, [business_id, fyStart]);
-    const itc = await dbGet(`SELECT COALESCE(SUM(cgst),0) as cgst, COALESCE(SUM(sgst),0) as sgst, COALESCE(SUM(igst),0) as igst FROM purchase_invoices WHERE business_id=? AND itc_eligible=1`, [business_id]);
-    const monthly = await dbAll(`SELECT DATE_FORMAT(invoice_date, '%m') as m, DATE_FORMAT(invoice_date, '%Y') as y, SUM(taxable_value) as taxable, SUM(cgst+sgst+igst) as tax, COUNT(*) as cnt FROM invoices WHERE business_id=? AND invoice_date>=? AND status!='cancelled' GROUP BY y,m ORDER BY y,m`, [business_id, fyStart]);
+
+    const [summary] = await Invoice.aggregate([
+      { $match: { business_id: bid, invoice_date: { $gte: fyStart }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: null, total_invoices: { $sum: 1 }, total_sales: { $sum: '$taxable_value' }, total_tax: { $sum: { $add: ['$cgst','$sgst','$igst'] } } } }
+    ]);
+    const [itc] = await Purchase.aggregate([
+      { $match: { business_id: bid, itc_eligible: 1 } },
+      { $group: { _id: null, cgst: { $sum: '$cgst' }, sgst: { $sum: '$sgst' }, igst: { $sum: '$igst' } } }
+    ]);
+    const monthly = await Invoice.aggregate([
+      { $match: { business_id: bid, invoice_date: { $gte: fyStart }, status: { $ne: 'cancelled' } } },
+      { $group: { _id: { m: { $substr: ['$invoice_date',5,2] }, y: { $substr: ['$invoice_date',0,4] } }, taxable: { $sum: '$taxable_value' }, tax: { $sum: { $add: ['$cgst','$sgst','$igst'] } }, cnt: { $sum: 1 } } },
+      { $sort: { '_id.y': 1, '_id.m': 1 } }
+    ]);
 
     const doc = new PDFDocument({ margin: 40, size: 'A4' });
     res.setHeader('Content-Type', 'application/pdf');
@@ -167,25 +163,22 @@ router.get('/dashboard-report', auth, async (req, res) => {
     doc.fontSize(9).text(`GSTIN: ${biz.gstin} | Generated: ${now.toLocaleDateString('en-IN')}`, { align: 'center' });
     doc.moveDown(1.5);
 
-    doc.rect(40, doc.y, 515, 1).fill('#4f7ef8');
-    doc.moveDown(0.5);
-
+    const s = summary || {}; const itcTotal = ((itc?.cgst||0)+(itc?.sgst||0)+(itc?.igst||0));
+    const stats = [
+      ['Total Sales (FY)', `Rs. ${(s.total_sales||0).toFixed(2)}`],
+      ['Total Tax Collected', `Rs. ${(s.total_tax||0).toFixed(2)}`],
+      ['Total Invoices', String(s.total_invoices||0)],
+      ['ITC Available', `Rs. ${itcTotal.toFixed(2)}`],
+      ['Net Tax Liability', `Rs. ${((s.total_tax||0)-itcTotal).toFixed(2)}`],
+    ];
     doc.fontSize(14).font('Helvetica-Bold').fillColor('#2d3748').text('Summary');
     doc.moveDown(0.5);
-    const stats = [
-      ['Total Sales (FY)', `Rs. ${(summary.total_sales||0).toFixed(2)}`],
-      ['Total Tax Collected', `Rs. ${(summary.total_tax||0).toFixed(2)}`],
-      ['Total Invoices', String(summary.total_invoices||0)],
-      ['ITC Available', `Rs. ${((itc.cgst||0)+(itc.sgst||0)+(itc.igst||0)).toFixed(2)}`],
-      ['Net Tax Liability', `Rs. ${((summary.total_tax||0)-((itc.cgst||0)+(itc.sgst||0)+(itc.igst||0))).toFixed(2)}`],
-    ];
     doc.fontSize(10).font('Helvetica');
     stats.forEach(([label, val]) => {
       const y = doc.y;
       doc.fillColor('#4a5568').text(label, 50, y, { width: 200 });
       doc.fillColor('#1a202c').font('Helvetica-Bold').text(val, 300, y, { width: 200, align: 'right' });
-      doc.font('Helvetica');
-      doc.moveDown(0.4);
+      doc.font('Helvetica'); doc.moveDown(0.4);
     });
 
     if (monthly.length) {
@@ -200,21 +193,18 @@ router.get('/dashboard-report', auth, async (req, res) => {
       doc.fillColor('black');
       let rowY = tY + 18;
       monthly.forEach((r, i) => {
-        const bg = i%2===0 ? '#f7fafc' : '#ffffff';
-        doc.rect(40, rowY, 515, 16).fill(bg);
+        doc.rect(40, rowY, 515, 16).fill(i%2===0?'#f7fafc':'#ffffff');
         doc.fillColor('#2d3748').fontSize(9).font('Helvetica');
-        doc.text(`${months[parseInt(r.m)]} ${r.y}`, 50, rowY+4);
+        doc.text(`${months[parseInt(r._id.m)]} ${r._id.y}`, 50, rowY+4);
         doc.text(`Rs. ${(r.taxable||0).toFixed(2)}`, 200, rowY+4);
         doc.text(`Rs. ${(r.tax||0).toFixed(2)}`, 350, rowY+4);
         doc.text(String(r.cnt), 470, rowY+4);
         rowY += 16;
       });
     }
-
     doc.moveDown(3).fontSize(8).fillColor('#a0aec0').text('This is a system generated report from GST Compliance System.', { align: 'center' });
     doc.end();
   } catch(e) {
-    console.error(e);
     if (!res.headersSent) res.status(500).json({ success: false, message: 'Report generation failed: '+e.message });
   }
 });

@@ -35,15 +35,10 @@ app.use('/api/export',     require('./routes/export'));
 app.use('/api/audit',      require('./routes/audit'));
 app.use('/api/users',      require('./routes/users'));
 
-// Database backup (admin only)
+// Database backup placeholder (MongoDB — use mongodump externally)
 app.get('/api/backup', require('./middleware/auth').auth, (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin only' });
-  const dbPath = process.env.DB_PATH || path.join(__dirname, '../data/gst_system.db');
-  const fs = require('fs');
-  if (!fs.existsSync(dbPath)) return res.status(404).json({ success: false, message: 'Database file not found' });
-  res.setHeader('Content-Type', 'application/octet-stream');
-  res.setHeader('Content-Disposition', `attachment; filename="gst_backup_${new Date().toISOString().split('T')[0]}.db"`);
-  fs.createReadStream(dbPath).pipe(res);
+  res.json({ success: true, message: 'Use mongodump to backup MongoDB. URI: ' + (process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/gst_system') });
 });
 
 app.get('*', (req, res) => {

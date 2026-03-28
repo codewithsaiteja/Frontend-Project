@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { dbGet, dbRun } = require('../utils/db');
+const { User, AuditLog } = require('../utils/db');
 
 function auth(req, res, next) {
   const header = req.headers['authorization'];
@@ -7,7 +7,7 @@ function auth(req, res, next) {
   const token = header.startsWith('Bearer ') ? header.slice(7) : header;
   jwt.verify(token, process.env.JWT_SECRET || 'gst_secret', async (err, decoded) => {
     if (err) return res.status(401).json({ success: false, message: 'Invalid or expired token' });
-    const user = await dbGet('SELECT id,name,email,role,active FROM users WHERE id=?', [decoded.id]);
+    const user = await User.findById(decoded.id).select('name email role active');
     if (!user || !user.active) return res.status(401).json({ success: false, message: 'Invalid session' });
     req.user = user;
     next();
@@ -27,9 +27,14 @@ function auditLog(action, entityType) {
     const orig = res.json.bind(res);
     res.json = (data) => {
       if (data?.success !== false && req.user) {
-        dbRun(`INSERT INTO audit_log(user_id,business_id,action,entity_type,entity_id,new_data,ip_address) VALUES(?,?,?,?,?,?,?)`,
-          [req.user.id, req.body?.business_id || null, action, entityType || null, data?.data?.id || null, JSON.stringify(req.body || {}), req.ip]
-        ).catch(() => {});
+        AuditLog.create({
+          user_id: req.user._id,
+          business_id: req.body?.business_id || null,
+          action, entity_type: entityType || null,
+          entity_id: data?.data?.id || null,
+          new_data: JSON.stringify(req.body || {}),
+          ip_address: req.ip,
+        }).catch(() => {});
       }
       return orig(data);
     };
