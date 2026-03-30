@@ -5,13 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GST Compliance System</title>
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/chat.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 
 <!-- ── AUTH SCREEN ────────────────────────────────────────────────────────── -->
 <div id="auth-screen">
-  <div class="auth-card">
+  <!-- Login Card -->
+  <div class="auth-card" id="login-card">
     <div class="auth-logo">
       <div class="logo-icon">⚖️</div>
       <h1>GST Compliance</h1>
@@ -22,16 +24,86 @@
       <label>Email Address</label>
       <input id="login-email" type="email" placeholder="admin@gst.local" autocomplete="email">
     </div>
-    <div class="form-group" style="margin-bottom:20px">
+    <div class="form-group" style="margin-bottom:14px">
       <label>Password</label>
       <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password"
              onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <button class="btn btn-primary w-full" id="login-btn" onclick="doLogin()" style="padding:11px">
-      Sign In
-    </button>
-    <div style="text-align:center;margin-top:20px;font-size:0.78rem;color:var(--text3)">
+    <div style="text-align:right;margin-bottom:16px">
+      <a href="#" style="font-size:0.82rem;color:var(--accent)" onclick="toggleAuth('forgot')">Forgot password?</a>
+    </div>
+    <button class="btn btn-primary w-full" id="login-btn" onclick="doLogin()" style="padding:11px">Sign In</button>
+    <div style="text-align:center;margin-top:16px;font-size:0.82rem;color:var(--text3)">
+      Don't have an account? <a href="#" style="color:var(--accent)" onclick="toggleAuth('signup')">Sign up</a>
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:0.78rem;color:var(--text3)">
       Default: admin@gst.local / Admin@123
+    </div>
+  </div>
+
+  <!-- Signup Card -->
+  <div class="auth-card hidden" id="signup-card">
+    <div class="auth-logo">
+      <div class="logo-icon">👤</div>
+      <h1>Create Account</h1>
+      <p>Join to simplify your GST filings</p>
+    </div>
+    <div id="signup-error" class="alert alert-danger hidden"></div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Full Name</label>
+      <input id="signup-name" type="text" placeholder="John Doe">
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Email Address</label>
+      <input id="signup-email" type="email" placeholder="john@company.com">
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>Password</label>
+      <input id="signup-password" type="password" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doRegister()">
+    </div>
+    <button class="btn btn-primary w-full" id="signup-btn" onclick="doRegister()" style="padding:11px">Create Account</button>
+    <div style="text-align:center;margin-top:16px;font-size:0.82rem;color:var(--text3)">
+      Already have an account? <a href="#" style="color:var(--accent)" onclick="toggleAuth('login')">Sign in</a>
+    </div>
+  </div>
+
+  <!-- Forgot Password Card -->
+  <div class="auth-card hidden" id="forgot-card">
+    <div class="auth-logo">
+      <div class="logo-icon">🔑</div>
+      <h1>Reset Password</h1>
+      <p>Enter your email to get a reset token</p>
+    </div>
+    <div id="forgot-error" class="alert alert-danger hidden"></div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>Email Address</label>
+      <input id="forgot-email" type="email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doForgotPassword()">
+    </div>
+    <button class="btn btn-primary w-full" id="forgot-btn" onclick="doForgotPassword()" style="padding:11px">Send Reset Token</button>
+    <div style="text-align:center;margin-top:16px;font-size:0.82rem;color:var(--text3)">
+      <a href="#" style="color:var(--accent)" onclick="toggleAuth('login')">Back to login</a>
+    </div>
+  </div>
+
+  <!-- Reset Password Card -->
+  <div class="auth-card hidden" id="reset-card">
+    <div class="auth-logo">
+      <div class="logo-icon">🔓</div>
+      <h1>New Password</h1>
+      <p>Enter your token and set a new password</p>
+    </div>
+    <div id="reset-error" class="alert alert-danger hidden"></div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Reset Token</label>
+      <input id="reset-token" type="text" placeholder="6-character token (e.g. A1B2C3)">
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>New Password</label>
+      <input id="reset-password" type="password" placeholder="Min 6 characters" onkeydown="if(event.key==='Enter')doResetPassword()">
+    </div>
+    <button class="btn btn-primary w-full" id="reset-btn" onclick="doResetPassword()" style="padding:11px">Confirm New Password</button>
+    <div style="text-align:center;margin-top:16px;font-size:0.82rem;color:var(--text3)">
+      <a href="#" style="color:var(--accent)" onclick="toggleAuth('login')">Cancel</a>
     </div>
   </div>
 </div>
@@ -187,6 +259,8 @@
 <script src="/js/more-pages.js"></script>
 <script src="/js/extra-pages.js"></script>
 <script src="/js/admin-pages.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/chat.js"></script>
 
 <script>
   // Login handler
@@ -207,14 +281,103 @@
       App.showApp();
       Pages.navigate('dashboard');
     } catch(e) {
-      err.textContent = e.message || 'Login failed';
+      if (e.message?.includes('verify your email')) {
+        err.innerHTML = `${e.message} <a href="#" style="color:var(--accent)" onclick="resendVerification('${email}')">Resend email</a>`;
+      } else {
+        err.textContent = e.message || 'Login failed';
+      }
       err.classList.remove('hidden');
       btn.disabled = false; btn.textContent = 'Sign In';
     }
   }
 
+  function toggleAuth(view) {
+    ['login','signup','forgot','reset'].forEach(v => {
+      document.getElementById(v+'-card').classList.toggle('hidden', v !== view);
+    });
+  }
+
+  async function doRegister() {
+    const name = document.getElementById('signup-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const btn = document.getElementById('signup-btn');
+    const err = document.getElementById('signup-error');
+    err.classList.add('hidden');
+    btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Creating...';
+    try {
+      if (!name || !email || !password) throw new Error('All fields are required');
+      const res = await API.post('/auth/register', { name, email, password });
+      toggleAuth('login');
+      toast('Account created! Check your email to verify before logging in.', 'success');
+    } catch(e) {
+      err.textContent = e.message || 'Registration failed';
+      err.classList.remove('hidden');
+      btn.disabled = false; btn.textContent = 'Create Account';
+    }
+  }
+
+  async function doForgotPassword() {
+    const email = document.getElementById('forgot-email').value.trim();
+    const btn = document.getElementById('forgot-btn');
+    const err = document.getElementById('forgot-error');
+    err.classList.add('hidden');
+    btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Sending...';
+    try {
+      if (!email) throw new Error('Email is required');
+      const res = await API.post('/auth/forgot-password', { email });
+      if (res.token) { toast(`[DEMO] Reset token: ${res.token}`, 'info'); document.getElementById('reset-token').value = res.token; }
+      toast('Check terminal for reset token', 'success');
+      toggleAuth('reset');
+    } catch(e) {
+      err.textContent = e.message || 'Action failed';
+      err.classList.remove('hidden');
+    } finally { btn.disabled = false; btn.textContent = 'Send Reset Token'; }
+  }
+
+  async function doResetPassword() {
+    const token = document.getElementById('reset-token').value.trim();
+    const password = document.getElementById('reset-password').value;
+    const btn = document.getElementById('reset-btn');
+    const err = document.getElementById('reset-error');
+    err.classList.add('hidden');
+    btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:16px;height:16px"></div> Updating...';
+    try {
+      if (!token || password.length < 6) throw new Error('Valid token & 6+ char password required');
+      await API.post('/auth/reset-password', { token, password });
+      toast('Password reset! Please log in.', 'success');
+      toggleAuth('login');
+    } catch(e) {
+      err.textContent = e.message || 'Action failed';
+      err.classList.remove('hidden');
+    } finally { btn.disabled = false; btn.textContent = 'Confirm New Password'; }
+  }
+
   // Init app on load
-  document.addEventListener('DOMContentLoaded', () => App.init());
+  document.addEventListener('DOMContentLoaded', () => {
+    // Handle email verification link
+    const hash = location.hash;
+    if (hash.startsWith('#verify?token=')) {
+      const token = hash.split('token=')[1];
+      API.post('/auth/verify-email', { token })
+        .then(res => { toast(res.message, 'success'); location.hash = ''; })
+        .catch(e => toast(e.message, 'error'));
+    }
+    // Handle OAuth redirect
+    if (hash.startsWith('#oauth?token=')) {
+      const token = hash.split('token=')[1];
+      localStorage.setItem('gst_token', token);
+      location.hash = '';
+    }
+    App.init();
+  });
+
+  async function resendVerification(email) {
+    try {
+      await API.post('/auth/resend-verification', { email });
+      toast('Verification email sent! Check your inbox.', 'success');
+    } catch(e) { toast(e.message, 'error'); }
+  }
 
   // Handle hash navigation
   window.addEventListener('hashchange', () => {

@@ -15,6 +15,12 @@ const userSchema = new mongoose.Schema({
   password: String,
   role: { type: String, default: 'accountant' },
   active: { type: Number, default: 1 },
+  googleId: String, facebookId: String, githubId: String,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date,
+  emailVerified: { type: Boolean, default: false },
+  emailVerifyToken: String,
+  emailVerifyExpires: Date,
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 const businessSchema = new mongoose.Schema({
@@ -163,8 +169,11 @@ async function initDb() {
 
   if (!(await User.findOne({ email: 'admin@gst.local' }))) {
     const hash = bcrypt.hashSync('Admin@123', 10);
-    await User.create({ name: 'Administrator', email: 'admin@gst.local', password: hash, role: 'admin' });
+    await User.create({ name: 'Administrator', email: 'admin@gst.local', password: hash, role: 'admin', emailVerified: true });
     console.log('✅ Default admin: admin@gst.local / Admin@123');
+  } else {
+    // Ensure existing admin is verified
+    await User.updateOne({ email: 'admin@gst.local' }, { emailVerified: true });
   }
   console.log('✅ MongoDB Database ready');
 }
