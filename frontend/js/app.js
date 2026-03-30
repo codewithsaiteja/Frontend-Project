@@ -194,6 +194,11 @@ const App = {
     // Restore currency
     const savedCur = localStorage.getItem('gst_currency');
     if (savedCur) { CURRENCY.current = savedCur; const sel = document.getElementById('currency-select'); if (sel) sel.value = savedCur; }
+    // Init live chat widget (only once)
+    if (window.ChatModule && !window.ChatModule._started) {
+      window.ChatModule._started = true;
+      window.ChatModule.init(this.user);
+    }
   },
 
   renderSidebar() {

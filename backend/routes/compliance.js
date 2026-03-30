@@ -17,9 +17,14 @@ router.get('/', auth, async (req, res) => {
 });
 
 router.patch('/:id/filed', auth, async (req, res) => {
-  const today = new Date().toISOString().split('T')[0];
-  await Compliance.findByIdAndUpdate(req.params.id, { status: 'filed', filed_date: today });
-  res.json({ success: true, message: 'Marked as filed' });
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const comp = await Compliance.findByIdAndUpdate(req.params.id, { status: 'filed', filed_date: today });
+    if (!comp) return res.status(404).json({ success: false, message: 'Compliance entry not found' });
+    res.json({ success: true, message: 'Marked as filed' });
+  } catch (e) {
+    res.status(500).json({ success: false, message: 'Failed to mark as filed: ' + e.message });
+  }
 });
 
 module.exports = router;

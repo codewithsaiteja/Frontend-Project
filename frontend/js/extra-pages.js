@@ -75,7 +75,7 @@ async function loadCompliance() {
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${statusBadge(c.status)}
-          ${c.status==='pending'?`<button class="btn btn-xs btn-success" onclick="markFiled(${c.id})">Mark Filed</button>`:''}
+          ${c.status==='pending'?`<button class="btn btn-xs btn-success" onclick="markFiled('${c._id || c.id}')">Mark Filed</button>`:''}
         </div>
       </div>`).join('') : '<div class="empty-state" style="padding:32px"><div class="empty-sub">No compliance entries. Add a business to generate calendar.</div></div>';
 
