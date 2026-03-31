@@ -4,6 +4,7 @@
 
 # Data & Logs
 /data
+/logs
 *.db
 *.log
 npm-debug.log*
@@ -27,11 +28,3 @@ yarn-error.log*
 # Build/Dist
 /dist
 /build
-
-# Docker local data (handled via volumes, but good to ignore local artifacts)
-mysql_data/
-
-# Temporary test scripts
-test-db.js
-test-limit.js
-scripts/migrate-to-mysql.js

@@ -26,7 +26,7 @@ const PAGE_TITLES = {
   returns: 'GST Returns', reconcile: 'Reconciliation', parties: 'Parties',
   compliance: 'Compliance Calendar', tds: 'TDS / TCS', analytics: 'Analytics',
   hsn: 'HSN / SAC Lookup', audit: 'Audit Trail', users: 'User Management',
-  businesses: 'Businesses', settings: 'Settings',
+  businesses: 'Businesses', settings: 'Settings', payments: 'Payments & P&L',
 };
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
