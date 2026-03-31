@@ -550,24 +550,124 @@ input[type=number] { font-family: var(--mono); }
 .hidden { display: none !important; }
 .divider { height: 1px; background: var(--border); margin: 16px 0; }
 
-/* Responsive */
+/* ── Responsive ──────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   :root { --sidebar-w: 0px; }
+
+  /* Sidebar */
   .sidebar { transform: translateX(-100%); width: 260px; }
   .sidebar.open { transform: translateX(0); }
-  .main-wrap { margin-left: 0; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .form-grid { grid-template-columns: 1fr; }
-  .sidebar-toggle { display: flex !important; }
   .sidebar-overlay.open { display: block; }
+  .sidebar-toggle { display: flex !important; }
+
+  /* Layout */
+  .main-wrap { margin-left: 0; }
+  .page-content { padding: 16px; }
+
+  /* Topbar */
+  .topbar { padding: 0 14px; gap: 10px; }
   .topbar-actions .currency-select { display: none; }
+  .topbar-title { font-size: 0.92rem; }
+
+  /* Stats */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-value { font-size: 1.25rem; }
+
+  /* Forms */
+  .form-grid { grid-template-columns: 1fr; }
+  .form-grid-2, .form-grid-3 { grid-template-columns: 1fr; }
+
+  /* Cards */
+  .card-header { flex-wrap: wrap; gap: 10px; }
+  .card-header .btn { font-size: 0.78rem; padding: 6px 12px; }
+  .card-body { padding: 14px; }
+
+  /* Modals — full screen on mobile */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  .modal-sm, .modal-lg { max-width: 100%; }
+  .modal-body { padding: 16px; }
+  .modal-header { padding: 14px 16px; }
+  .modal-footer { padding: 12px 16px; }
+
+  /* Tables — horizontal scroll with sticky first column */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 600px; }
+  thead th { padding: 8px 10px; font-size: 0.68rem; }
+  tbody td { padding: 9px 10px; font-size: 0.82rem; }
+
+  /* Filters */
+  .filters-bar { gap: 8px; padding: 10px 14px; }
+  .filters-bar input, .filters-bar select { max-width: 100%; flex: 1; min-width: 120px; }
+
+  /* Notification dropdown */
+  .notification-dropdown { width: 280px; right: -60px; }
+
+  /* Auth card */
+  .auth-card { padding: 28px 20px; margin: 16px; }
+
+  /* Charts */
+  .chart-wrap { height: 200px; }
+  .chart-wrap canvas { max-height: 200px; }
+
+  /* Dashboard two-column grids → single column */
+  [style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+  [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+
+  /* Compliance calendar */
+  .cal-item { flex-wrap: wrap; gap: 6px; }
+  .cal-date { min-width: auto; }
+
+  /* Tabs */
+  .tabs { width: 100%; }
+  .tab { flex: 1; text-align: center; padding: 7px 8px; font-size: 0.78rem; }
+
+  /* Items table in invoice */
+  .items-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .items-table { min-width: 700px; }
+
+  /* Buttons in table actions */
+  .btn-xs { padding: 4px 8px; }
 }
 
 @media (max-width: 480px) {
-  .stats-grid { grid-template-columns: 1fr; }
-  .page-content { padding: 14px; }
+  html { font-size: 13px; }
+
+  /* Stats single column */
+  .stats-grid { grid-template-columns: 1fr; gap: 10px; }
+
+  /* Page padding */
+  .page-content { padding: 12px; }
+
+  /* Topbar compact */
+  .topbar { padding: 0 12px; }
+  .topbar-title { font-size: 0.88rem; }
+
+  /* Hide notification bell text, keep icon */
+  .notif-count { font-size: 0.55rem; min-width: 14px; height: 14px; }
+
+  /* Auth */
+  .auth-card { padding: 24px 16px; margin: 12px; }
+  .auth-logo h1 { font-size: 1.2rem; }
+
+  /* Filters stack vertically */
   .filters-bar { flex-direction: column; align-items: stretch; }
   .filters-bar input, .filters-bar select { max-width: 100%; }
+
+  /* Modal full height on very small screens */
+  .modal { max-height: 96vh; }
+
+  /* Toast */
+  #toast-container { bottom: 16px; right: 12px; left: 12px; }
+  .toast { min-width: unset; width: 100%; }
+
+  /* Card header stack */
+  .card-header { flex-direction: column; align-items: flex-start; }
+  .card-header > .btn, .card-header > div:last-child { align-self: flex-end; }
 }
 
 /* Sidebar toggle (hamburger) */

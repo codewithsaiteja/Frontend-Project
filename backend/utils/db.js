@@ -68,6 +68,13 @@ const invoiceSchema = new mongoose.Schema({
   tds_amount: { type: Number, default: 0 }, tcs_amount: { type: Number, default: 0 },
   irn: String, ack_no: String, ack_date: Date, ewb_number: String, ewb_date: Date,
   status: { type: String, default: 'draft' }, notes: String,
+  // Payment tracking
+  payment_status: { type: String, enum: ['unpaid','partial','paid'], default: 'unpaid' },
+  amount_paid: { type: Number, default: 0 },
+  payment_due_date: String,
+  payment_date: String,
+  payment_method: String,
+  payment_notes: String,
   created_by: mongoose.Schema.Types.ObjectId,
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
@@ -81,6 +88,12 @@ const purchaseSchema = new mongoose.Schema({
   gstr2b_matched: { type: Number, default: 0 },
   match_status: { type: String, default: 'pending' },
   status: { type: String, default: 'draft' },
+  // Payment tracking
+  payment_status: { type: String, enum: ['unpaid','partial','paid'], default: 'unpaid' },
+  amount_paid: { type: Number, default: 0 },
+  payment_due_date: String,
+  payment_date: String,
+  payment_method: String,
   created_by: mongoose.Schema.Types.ObjectId,
 }, { timestamps: { createdAt: 'created_at' } });
 

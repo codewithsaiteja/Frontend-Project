@@ -1,4 +1,7 @@
 require('dotenv').config();
+const validateEnv = require('./utils/validateEnv');
+validateEnv(); // crash early if required env vars are missing
+
 const express    = require('express');
 const cors       = require('cors');
 const helmet     = require('helmet');
@@ -13,6 +16,9 @@ const session    = require('express-session');
 const passport   = require('./utils/passport');
 const { initDb } = require('./utils/db');
 const Chat       = require('./models/Chat');
+const logger     = require('./utils/logger');
+const swaggerUi  = require('swagger-ui-express');
+const swaggerSpec = require('./utils/swagger');
 
 const app    = express();
 const server = http.createServer(app);
@@ -27,7 +33,8 @@ const io = new Server(server, {
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(compression());
-app.use(morgan('dev'));
+// Route morgan through winston
+app.use(morgan('combined', { stream: { write: msg => logger.http(msg.trim()) } }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(session({ secret: process.env.SESSION_SECRET || 'gst_session_secret', resave: false, saveUninitialized: false }));
@@ -35,6 +42,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use('/api/', rateLimit({ windowMs: 15*60*1000, max: 500, standardHeaders: true, legacyHeaders: false }));
 app.use(express.static(path.join(__dirname, '../frontend')));
+
+// Swagger API docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, { customSiteTitle: 'GST API Docs' }));
 
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/businesses', require('./routes/businesses'));
@@ -51,6 +61,7 @@ app.use('/api/export',     require('./routes/export'));
 app.use('/api/audit',      require('./routes/audit'));
 app.use('/api/users',      require('./routes/users'));
 app.use('/api/tickets',    require('./routes/tickets'));
+app.use('/api/payments',   require('./routes/payments'));
 
 const { auth } = require('./middleware/auth');
 
@@ -89,7 +100,7 @@ app.get('*', (req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method}`);
   res.status(err.status||500).json({ success: false, message: err.message||'Internal server error' });
 });
 
@@ -299,11 +310,11 @@ initDb().then(() => {
     cron.schedule('0 6 * * *', updateOverdueCompliance);
   } catch(e) {}
   server.listen(PORT, () => {
-    console.log(`\n🚀 GST System running → http://localhost:${PORT}`);
-    console.log(`📧 Login: admin@gst.local`);
-    console.log(`🔑 Password: Admin@123\n`);
+    logger.info(`🚀 GST System running → http://localhost:${PORT}`);
+    logger.info(`📚 API Docs → http://localhost:${PORT}/api-docs`);
+    logger.info(`📧 Login: admin@gst.local  🔑 Password: Admin@123`);
   });
 }).catch(err => {
-  console.error('❌ Failed to initialize database:', err.message);
+  logger.error('❌ Failed to initialize database: ' + err.message);
   process.exit(1);
 });
