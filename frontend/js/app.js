@@ -304,10 +304,16 @@ const App = {
   },
 
   async logout() {
+    // Clear all auth data
     localStorage.removeItem('gst_token');
     localStorage.removeItem('gst_biz_id');
-    this.user = null; this.currentBiz = null;
-    this.showAuth();
+    sessionStorage.clear();
+    this.user = null;
+    this.currentBiz = null;
+    this.businesses = [];
+    // Set flag for landing page toast, then redirect
+    sessionStorage.setItem('gst_logged_out', '1');
+    window.location.href = '/';
   }
 };
 

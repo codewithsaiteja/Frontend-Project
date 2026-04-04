@@ -23,7 +23,8 @@ router.post('/login', [
     const user = await User.findOne({ email: email.toLowerCase(), active: 1 });
     if (!user || !user.password || !bcrypt.compareSync(password, user.password))
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    if (!user.emailVerified)
+    // Only block unverified users who registered via email (not admin/OAuth/password-reset users)
+    if (user.emailVerified === false && user.emailVerifyToken)
       return res.status(403).json({ success: false, message: 'Please verify your email before logging in.', unverified: true });
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET || 'gst_secret', { expiresIn: '7d' });
     const ubLinks = await UserBusiness.find({ user_id: user._id });
@@ -154,6 +155,8 @@ router.post('/reset-password', [
     user.password = bcrypt.hashSync(req.body.password, 10);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
+    user.emailVerified = true; // ensure login works after reset
+    user.emailVerifyToken = undefined;
     await user.save();
     res.json({ success: true, message: 'Password has been successfully changed.' });
   } catch(e) { res.status(500).json({ success: false, message: e.message }); }

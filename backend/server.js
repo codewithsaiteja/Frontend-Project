@@ -34,7 +34,13 @@ app.use(session({ secret: process.env.SESSION_SECRET || 'gst_session_secret', re
 app.use(passport.initialize());
 app.use(passport.session());
 app.use('/api/', rateLimit({ windowMs: 15*60*1000, max: 500, standardHeaders: true, legacyHeaders: false }));
-app.use(express.static(path.join(__dirname, '../frontend')));
+// Serve static assets but disable auto-serving index.html for '/'
+app.use(express.static(path.join(__dirname, '../frontend'), { index: false }));
+
+// Landing page is the entry point
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/landing.html'));
+});
 
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/businesses', require('./routes/businesses'));

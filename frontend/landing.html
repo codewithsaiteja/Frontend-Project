@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GST Compliance System — Simplified GST Management for Indian Businesses</title>
+  <meta name="description" content="The complete GST management platform for Indian businesses — file returns, reconcile data, track invoices, and stay compliant effortlessly.">
+  <link rel="stylesheet" href="/css/landing.css">
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav class="nav" id="nav">
+  <a href="/landing.html" class="nav-logo">
+    <div class="nav-logo-icon">G</div>
+    <div>
+      <div class="nav-logo-text">GST System</div>
+      <div class="nav-logo-sub">Compliance Suite</div>
+    </div>
+  </a>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#modules">Modules</a></li>
+    <li><a href="#how">How it Works</a></li>
+  </ul>
+  <div class="nav-actions">
+    <a href="/index.html" class="btn btn-ghost">Sign In</a>
+    <a href="/index.html#signup" class="btn btn-primary" id="nav-cta">Get Started →</a>
+  </div>
+  <button class="nav-hamburger" id="hamburger" aria-label="Toggle menu">☰</button>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero" id="hero">
+  <div>
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Trusted by 10,000+ Indian Businesses
+    </div>
+    <h1>GST Compliance,<br><span>Simplified.</span></h1>
+    <p class="hero-sub">The complete GST management platform for Indian businesses — file returns, reconcile data, track invoices, and stay compliant effortlessly.</p>
+    <div class="hero-actions">
+      <a href="/index.html#signup" class="btn btn-primary btn-lg">Start Free Trial</a>
+      <a href="#how" class="btn btn-outline btn-lg">▶ How it Works</a>
+    </div>
+
+    <!-- Browser Mockup -->
+    <div class="mockup-wrap">
+      <div class="mockup-browser">
+        <div class="mockup-bar">
+          <div class="mockup-dots"><span></span><span></span><span></span></div>
+          <div class="mockup-url">localhost:3000/#dashboard</div>
+        </div>
+        <div class="mockup-body">
+          <div class="mockup-sidebar">
+            <div class="mock-logo">
+              <div class="mock-logo-icon">G</div>
+              <div>
+                <div class="mock-logo-text">GST System</div>
+                <div class="mock-logo-sub">Compliance Suite</div>
+              </div>
+            </div>
+            <div class="mock-section-label">Main</div>
+            <div class="mock-nav-item active"><span>📊</span> Dashboard</div>
+            <div class="mock-nav-item"><span>📄</span> Sales Invoices</div>
+            <div class="mock-nav-item"><span>🧾</span> Purchases</div>
+            <div class="mock-nav-item"><span>👥</span> Parties</div>
+            <div class="mock-section-label">GST Filing</div>
+            <div class="mock-nav-item"><span>🏛️</span> GST Returns</div>
+            <div class="mock-nav-item"><span>🔄</span> Reconciliation</div>
+            <div class="mock-nav-item"><span>📅</span> Compliance</div>
+            <div class="mock-section-label">Tools</div>
+            <div class="mock-nav-item"><span>📈</span> Analytics</div>
+            <div class="mock-nav-item"><span>💰</span> TDS / TCS</div>
+          </div>
+          <div class="mockup-content">
+            <div class="mock-header">
+              <div class="mock-title">Dashboard</div>
+              <div class="mock-period">FY 2024-25 · Q3</div>
+            </div>
+            <div class="mock-cards">
+              <div class="mock-card">
+                <div class="mock-card-label">Total Tax Liability</div>
+                <div class="mock-card-val">₹4.2L</div>
+                <div class="mock-card-change up">↑ 12.4%</div>
+              </div>
+              <div class="mock-card">
+                <div class="mock-card-label">ITC Available</div>
+                <div class="mock-card-val">₹1.8L</div>
+                <div class="mock-card-change up">↑ 8.1%</div>
+              </div>
+              <div class="mock-card">
+                <div class="mock-card-label">Net Payable</div>
+                <div class="mock-card-val">₹2.4L</div>
+                <div class="mock-card-change down">↓ 3.2%</div>
+              </div>
+              <div class="mock-card">
+                <div class="mock-card-label">Returns Filed</div>
+                <div class="mock-card-val">8/12</div>
+                <div class="mock-card-change up">On Track</div>
+              </div>
+            </div>
+            <div class="mock-charts">
+              <div class="mock-chart-box">
+                <div class="mock-chart-title">Monthly Tax Trend</div>
+                <div class="mock-bars" id="mock-bars"></div>
+              </div>
+              <div class="mock-chart-box">
+                <div class="mock-chart-title">Tax Breakup</div>
+                <div class="mock-donut"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-val">10K+</div><div class="hero-stat-label">Businesses on Platform</div></div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat"><div class="hero-stat-val">₹500Cr</div><div class="hero-stat-label">GST Filed Monthly</div></div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat"><div class="hero-stat-val">99.9%</div><div class="hero-stat-label">Uptime Guarantee</div></div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat"><div class="hero-stat-val">2M+</div><div class="hero-stat-label">Invoices Processed</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS BAR ── -->
+<div class="stats-bar">
+  <div class="stats-grid">
+    <div class="stat-item"><div class="stat-val">10<span>K+</span></div><div class="stat-label">Businesses on Platform</div></div>
+    <div class="stat-item"><div class="stat-val">₹500<span>Cr</span></div><div class="stat-label">GST Filed Monthly</div></div>
+    <div class="stat-item"><div class="stat-val">99.9<span>%</span></div><div class="stat-label">Uptime Guarantee</div></div>
+    <div class="stat-item"><div class="stat-val">2<span>M+</span></div><div class="stat-label">Invoices Processed</div></div>
+  </div>
+</div>
+
+<!-- ── FEATURES ── -->
+<section class="features" id="features">
+  <div class="section-header">
+    <div class="section-tag">⚡ Core Features</div>
+    <h2 class="section-title">Everything you need<br>for GST compliance</h2>
+    <p class="section-sub">From invoice management to return filing, handle your entire GST workflow in one unified platform.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card featured">
+      <div class="feature-icon">📊</div>
+      <div class="feature-title">Smart GST Returns Filing</div>
+      <div class="feature-desc">Auto-populate GSTR-1, GSTR-3B, GSTR-9 from your invoices. Get computation summaries, detect mismatches before filing, and submit directly to the GST portal.</div>
+      <div class="feature-tags">
+        <span class="feature-tag">GSTR-1</span>
+        <span class="feature-tag">GSTR-3B</span>
+        <span class="feature-tag">GSTR-9</span>
+        <span class="feature-tag">Auto-fill</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔄</div>
+      <div class="feature-title">2A/2B Reconciliation</div>
+      <div class="feature-desc">Auto-match purchase invoices with GSTR-2A/2B data. Identify unmatched entries and maximize your ITC claims.</div>
+      <div class="feature-tags">
+        <span class="feature-tag">ITC Matching</span>
+        <span class="feature-tag">Auto</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📋</div>
+      <div class="feature-title">Invoice Management</div>
+      <div class="feature-desc">Create GST-compliant sales invoices, manage B2B/B2C/exports/RCM transactions with full tax calculations.</div>
+      <div class="feature-tags">
+        <span class="feature-tag">B2B / B2C</span>
+        <span class="feature-tag">E-Invoice</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📡</div>
+      <div class="feature-title">Compliance Calendar</div>
+      <div class="feature-desc">Never miss a deadline. Get alerts for GSTR due dates, interest/penalty calculations, and auto-reminders.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <div class="feature-title">HSN Lookup</div>
+      <div class="feature-desc">Instantly search HSN/SAC codes with applicable GST rates. Auto-suggest based on product description.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📈</div>
+      <div class="feature-title">Analytics & Reports</div>
+      <div class="feature-desc">Deep-dive into tax liability trends, ITC utilization, supplier compliance scores, and cash flow impact.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section class="how" id="how">
+  <div class="section-header">
+    <div class="section-tag">🚀 How it Works</div>
+    <h2 class="section-title">Up and running<br>in minutes</h2>
+    <p class="section-sub">Getting started is effortless — no CA needed.</p>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Add Your Business</div>
+      <div class="step-desc">Enter your GSTIN and we auto-fetch your registration details from the GST portal.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">Import Data</div>
+      <div class="step-desc">Upload invoices via Excel/CSV or connect your accounting software for automatic sync.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">Review & Reconcile</div>
+      <div class="step-desc">Our engine flags mismatches between your books and GSTN data automatically.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title">File Returns</div>
+      <div class="step-desc">One-click filing directly to the GST portal. Track status and download acknowledgements.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MODULES ── -->
+<section class="modules" id="modules">
+  <div class="section-header">
+    <div class="section-tag">📦 All Modules</div>
+    <h2 class="section-title">Complete suite,<br>zero complexity</h2>
+    <p class="section-sub">Every tool your tax team needs, under one roof.</p>
+  </div>
+  <div class="modules-grid">
+    <div class="module-card"><div class="module-icon">🧾</div><div class="module-title">Sales Invoices</div><div class="module-desc">GST-compliant invoice creation with e-invoicing support</div></div>
+    <div class="module-card"><div class="module-icon">🛒</div><div class="module-title">Purchases</div><div class="module-desc">Track inward supplies and manage input tax credit</div></div>
+    <div class="module-card"><div class="module-icon">👥</div><div class="module-title">Parties</div><div class="module-desc">Manage suppliers and customers with GSTIN validation</div></div>
+    <div class="module-card"><div class="module-icon">🏛️</div><div class="module-title">GST Returns</div><div class="module-desc">File GSTR-1, 3B, 9, 9C and more with auto-computation</div></div>
+    <div class="module-card"><div class="module-icon">🔄</div><div class="module-title">Reconciliation</div><div class="module-desc">Match purchase data with GSTR-2A/2B automatically</div></div>
+    <div class="module-card"><div class="module-icon">✅</div><div class="module-title">Compliance</div><div class="module-desc">Deadline alerts, notices tracker, interest calculator</div></div>
+    <div class="module-card"><div class="module-icon">💰</div><div class="module-title">TDS / TCS</div><div class="module-desc">Track tax deductions and collections on transactions</div></div>
+    <div class="module-card"><div class="module-icon">🔍</div><div class="module-title">HSN Lookup</div><div class="module-desc">Instant HSN/SAC code search with applicable GST rates</div></div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="cta">
+  <h2>Ready to simplify<br>your GST compliance?</h2>
+  <p>Join thousands of businesses filing smarter. Start your free 14-day trial — no credit card required.</p>
+  <div class="cta-actions">
+    <a href="/index.html#signup" class="btn btn-primary btn-lg">Start Free Trial →</a>
+    <a href="/index.html" class="btn btn-ghost btn-lg">Sign In</a>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">
+      <div class="footer-logo-icon">G</div>
+      <div>
+        <div class="footer-logo-text">GST System</div>
+        <div class="footer-logo-copy">© 2025 Compliance Suite</div>
+      </div>
+    </div>
+    <div class="footer-tagline">Made for Indian businesses</div>
+    <div class="footer-links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Support</a>
+      <a href="#">Contact</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/js/landing.js"></script>
+<script>
+  // Show logout toast if redirected after logout
+  document.addEventListener('DOMContentLoaded', () => {
+    if (sessionStorage.getItem('gst_logged_out')) {
+      sessionStorage.removeItem('gst_logged_out');
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e2236;border:1px solid #2e3554;border-left:3px solid #22c55e;border-radius:10px;padding:12px 18px;font-size:0.85rem;color:#e8eaf6;display:flex;align-items:center;gap:10px;box-shadow:0 4px 24px rgba(0,0,0,0.4);z-index:9999;font-family:DM Sans,sans-serif;animation:slideIn 0.3s ease';
+      t.innerHTML = '<span style="color:#22c55e">✓</span><span>Logged out successfully</span>';
+      document.body.appendChild(t);
+      setTimeout(() => { t.style.transition='0.3s'; t.style.opacity='0'; t.style.transform='translateX(100%)'; setTimeout(()=>t.remove(),300); }, 3000);
+    }
+  });
+</script>
+</body>
+</html>
